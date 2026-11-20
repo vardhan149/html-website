@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cricket Players Search</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial;background:#f5f7fa;color:#202124}
+header{padding:22px;text-align:center;background:#fff}
+.logo{font-size:30px;font-weight:bold;color:#16864b}
+.logo span{color:#4285f4}
+.hero{text-align:center;padding:45px 15px 25px}
+.hero h1{font-size:34px;margin-bottom:12px}
+.hero p{color:#666}
+.searchbox{max-width:650px;margin:25px auto;display:flex;
+background:white;border:1px solid #ddd;border-radius:35px;
+padding:7px 15px;box-shadow:0 2px 8px #ddd}
+.searchbox input{flex:1;border:none;outline:none;
+font-size:16px;padding:12px;background:transparent}
+.searchbox button{border:none;background:#16864b;color:white;
+padding:12px 22px;border-radius:25px;cursor:pointer}
+.filters{display:flex;justify-content:center;gap:9px;
+flex-wrap:wrap;padding:10px}
+.filters button{padding:10px 16px;border:1px solid #ddd;
+border-radius:20px;background:white;cursor:pointer}
+.filters button.active{background:#16864b;color:white}
+.container{max-width:1100px;margin:25px auto;padding:15px}
+.results-info{margin-bottom:20px;color:#666}
+.players{display:grid;grid-template-columns:
+repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.card{background:white;border-radius:14px;padding:20px;
+box-shadow:0 2px 10px #ddd;cursor:pointer;transition:.2s}
+.card:hover{transform:translateY(-4px)}
+.avatar{width:65px;height:65px;border-radius:50%;
+background:#e5f5eb;color:#16864b;display:grid;
+place-items:center;font-size:23px;font-weight:bold;
+margin-bottom:14px}
+.card h3{margin-bottom:8px}
+.card p{color:#666;margin:6px 0;font-size:14px}
+.tag{display:inline-block;background:#e5f5eb;
+color:#16864b;padding:5px 10px;border-radius:15px;
+font-size:12px;margin-top:8px}
+.empty{text-align:center;padding:50px;color:#777}
+.modal{display:none;position:fixed;inset:0;
+background:#0009;z-index:10;align-items:center;
+justify-content:center;padding:15px}
+.modal-content{background:white;color:#222;
+max-width:500px;width:100%;padding:25px;
+border-radius:15px;max-height:85vh;overflow:auto}
+.close{float:right;border:none;background:#eee;
+padding:8px 12px;border-radius:8px;cursor:pointer}
+.detail{margin:15px 0;padding:12px;background:#f3f5f7;
+border-radius:8px}
+footer{text-align:center;background:white;
+padding:25px;margin-top:40px;color:#777}
+@media(max-width:600px){
+.hero h1{font-size:25px}
+.searchbox{margin:20px 10px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">🏏 CRICKET<span> WORLD</span></div>
+</header>
+
+<section class="hero">
+<h1>Cricket Players Search</h1>
+<p>Search cricket players from around the world</p>
+
+<div class="searchbox">
+<input id="search" type="search"
+placeholder="Search Virat Kohli, Rohit Sharma...">
+<button onclick="searchPlayers()">Search</button>
+</div>
+
+<div class="filters">
+<button class="active" onclick="filter('All',this)">All</button>
+<button onclick="filter('India',this)">India</button>
+<button onclick="filter('Australia',this)">Australia</button>
+<button onclick="filter('England',this)">England</button>
+<button onclick="filter('Pakistan',this)">Pakistan</button>
+<button onclick="filter('New Zealand',this)">New Zealand</button>
+<button onclick="filter('South Africa',this)">South Africa</button>
+</div>
+</section>
+
+<main class="container">
+<div class="results-info" id="count"></div>
+<div class="players" id="players"></div>
+</main>
+
+<div class="modal" id="modal">
+<div class="modal-content">
+<button class="close" onclick="closeModal()">✕ Close</button>
+<div id="details"></div>
+</div>
+</div>
+
+<footer>
+<h3>🏏 CRICKET WORLD</h3>
+<p>Explore Cricket Players & Their Careers</p>
+<p>© 2026 Cricket World</p>
+</footer>
+
+<script>
+
+// SAMPLE PLAYER DATABASE
+const database = [
+["Virat Kohli","India","Batter","Right-hand bat"],
+["Rohit Sharma","India","Batter","Right-hand bat"],
+["Jasprit Bumrah","India","Fast Bowler","Right-arm fast"],
+["Shubman Gill","India","Batter","Right-hand bat"],
+["Hardik Pandya","India","All-rounder","Right-hand bat"],
+["KL Rahul","India","Wicketkeeper Batter","Right-hand bat"],
+["Rishabh Pant","India","Wicketkeeper Batter","Left-hand bat"],
+["Ravindra Jadeja","India","All-rounder","Left-hand bat"],
+["MS Dhoni","India","Wicketkeeper Batter","Right-hand bat"],
+["Yuvraj Singh","India","All-rounder","Left-hand bat"],
+["Sachin Tendulkar","India","Batter","Right-hand bat"],
+["Suryakumar Yadav","India","Batter","Right-hand bat"],
+["Steve Smith","Australia","Batter","Right-hand bat"],
+["Pat Cummins","Australia","Fast Bowler","Right-arm fast"],
+["Travis Head","Australia","Batter","Left-hand bat"],
+["David Warner","Australia","Batter","Left-hand bat"],
+["Glenn Maxwell","Australia","All-rounder","Right-hand bat"],
+["Mitchell Starc","Australia","Fast Bowler","Left-arm fast"],
+["Joe Root","England","Batter","Right-hand bat"],
+["Ben Stokes","England","All-rounder","Left-hand bat"],
+["Jos Buttler","England","Wicketkeeper Batter","Right-hand bat"],
+["Jofra Archer","England","Fast Bowler","Right-arm fast"],
+["Babar Azam","Pakistan","Batter","Right-hand bat"],
+["Shaheen Afridi","Pakistan","Fast Bowler","Left-arm fast"],
+["Mohammad Rizwan","Pakistan","Wicketkeeper Batter","Right-hand bat"],
+["Wasim Akram","Pakistan","Fast Bowler","Left-arm fast"],
+["Kane Williamson","New Zealand","Batter","Right-hand bat"],
+["Trent Boult","New Zealand","Fast Bowler","Left-arm fast"],
+["Ross Taylor","New Zealand","Batter","Right-hand bat"],
+["AB de Villiers","South Africa","Batter","Right-hand bat"],
+["Quinton de Kock","South Africa","Wicketkeeper Batter","Left-hand bat"],
+["Kagiso Rabada","South Africa","Fast Bowler","Right-arm fast"],
+["Chris Gayle","West Indies","Batter","Left-hand bat"],
+["Brian Lara","West Indies","Batter","Left-hand bat"],
+["Shakib Al Hasan","Bangladesh","All-rounder","Left-hand bat"],
+["Mushfiqur Rahim","Bangladesh","Wicketkeeper Batter","Right-hand bat"],
+["Angelo Mathews","Sri Lanka","All-rounder","Right-hand bat"],
+["Kumar Sangakkara","Sri Lanka","Wicketkeeper Batter","Left-hand bat"],
+["Rashid Khan","Afghanistan","Bowler","Right-arm leg spin"],
+["Mujeeb Ur Rahman","Afghanistan","Bowler","Right-arm off spin"]
+];
+
+let selectedCountry = "All";
+let currentPlayers = [...database];
+
+function showPlayers(data) {
+    const box = document.getElementById("players");
+    box.innerHTML = "";
+
+    document.getElementById("count").textContent =
+        "Showing " + data.length + " players";
+
+    if(data.length === 0) {
+        box.innerHTML =
+        '<div class="empty">No players found. Try another name.</div>';
+        return;
+    }
+
+    data.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = p[0].split(" ")
+            .map(w=>w[0]).join("");
+
+        const name = document.createElement("h3");
+        name.textContent = p[0];
+
+        const country = document.createElement("p");
+        country.textContent = "🌍 " + p[1];
+
+        const role = document.createElement("p");
+        role.textContent = "🏏 " + p[2];
+
+        const style = document.createElement("p");
+        style.textContent = "Batting/Bowling: " + p[3];
+
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = "View Profile";
+
+        card.append(avatar,name,country,role,style,tag);
+        card.onclick = () => openProfile(p);
+
+        box.appendChild(card);
+    });
+}
+
+function searchPlayers() {
+    const q = document.getElementById("search")
+        .value.toLowerCase().trim();
+
+    const data = database.filter(p =>
+        (selectedCountry === "All" || p[1] === selectedCountry) &&
+        p.some(value => value.toLowerCase().includes(q))
+    );
+
+    currentPlayers = data;
+    showPlayers(data);
+}
+
+function filter(country,button) {
+    selectedCountry = country;
+
+    document.querySelectorAll(".filters button")
+        .forEach(b=>b.classList.remove("active"));
+
+    button.classList.add("active");
+    searchPlayers();
+}
+
+document.getElementById("search")
+.addEventListener("input",searchPlayers);
+
+function openProfile(p) {
+    document.getElementById("details").innerHTML = "";
+
+    const heading = document.createElement("h2");
+    heading.textContent = "🏏 " + p[0];
+
+    const fields = [
+        ["Country",p[1]],
+        ["Player Role",p[2]],
+        ["Batting / Bowling Style",p[3]],
+        ["Career Statistics","Connect a cricket data API for verified stats"]
+    ];
+
+    const details = document.getElementById("details");
+    details.appendChild(heading);
+
+    fields.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "detail";
+        const strong = document.createElement("strong");
+        strong.textContent = item[0] + ": ";
+        div.append(strong,document.createTextNode(item[1]));
+        details.appendChild(div);
+    });
+
+    document.getElementById("modal").style.display="flex";
+}
+
+function closeModal() {
+    document.getElementById("modal").style.display="none";
+}
+
+showPlayers(database);
+
+</script>
+</body>
+</html>
